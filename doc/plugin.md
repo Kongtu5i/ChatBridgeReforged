@@ -113,13 +113,13 @@ For the following message from the message's standard output：
 
 The attributes of the info object are:
 
-| Attribute     | Value                  |
-|---------------|------------------------|
-| content       | `MCDR QQ : 1101314858` |
-| sender        | ``                     |
-| source_client | `CBR`                  |
-| client_type   | ``                     |
-| is_player()   | False                  |
+| Attribute     | Value                |
+|---------------|----------------------|
+| content       | `CBR QQ : 496983111` |
+| sender        | ``                   |
+| source_client | `CBR`                |
+| client_type   | ``                   |
+| is_player()   | False                |
 
 ------
 
