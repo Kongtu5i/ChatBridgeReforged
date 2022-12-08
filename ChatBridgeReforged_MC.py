@@ -835,14 +835,26 @@ def on_info(server: "PluginServerInterface", info: "Info"):
 
 
 def on_player_joined(server, name, info=None):
-    client.try_start()
-    client.send_msg(client.socket, msg_json_formatter(client.name, "", name + " joined " + client.name))
+    if not name.lower().startswith('bot_'):
+        client.try_start()
+        client.send_msg(client.socket, msg_json_formatter(client.name, "", name + " joined " + client.name))
 
 
 def on_player_left(server, name, info=None):
-    client.try_start()
-    client.send_msg(client.socket, msg_json_formatter(client.name, "", name + " left " + client.name))
+    if not name.lower().startswith('bot_'):
+        client.try_start()
+        client.send_msg(client.socket, msg_json_formatter(client.name, "", name + " left " + client.name)
 
+
+ def on_server_startup(server):
+    client.try_start()
+    client.send_msg(client.socket, msg_json_formatter(client.name, '', 'server has started up'))
+
+
+def on_server_stop(server):
+    client.try_start()
+    client.send_msg(client.socket, msg_json_formatter(client.name, '', 'server has stopped'))                   
+ 
 
 def on_unload(server):
     client.close_connection()
