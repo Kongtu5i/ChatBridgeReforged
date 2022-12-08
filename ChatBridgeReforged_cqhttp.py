@@ -422,8 +422,13 @@ class CQClient(websocket.WebSocketApp):
         elif data["post_type"] == "message" and data["message_type"] == "group":
             if str(data["group_id"]) in self.config.react_groups and data["anonymous"] is None:
                 client = self.clients[str(data["group_id"])]
-                msg = msg_json_formatter(client.name, data["sender"]["nickname"], data["raw_message"])
-                message = message_formatter(client.name, data["sender"]["nickname"], data["raw_message"])
+                if data['sender']['card'] == "":
+                    msg_sender = data['sender']['nickname']
+                else:
+                    msg_sender = data['sender']['card']
+                sender = str(data['user_id']) + "_qq_user_id_" + msg_sender
+                msg = msg_json_formatter(client.name, sender, data["raw_message"])
+                message = message_formatter(client.name, sender, data["raw_message"])
                 if self.server is None:
                     self.logger.info(message)
                 client.send_msg(client.socket, msg)
@@ -1045,17 +1050,62 @@ def custom_check_send(target, msg, client, player, server: "CBRInterface"):
     return cache_disable_duplicate_send
 
 
+def msg_handle(msg):
+    msg_list = msg.split("[CQ:", 1)
+    if msg_list[1].startswith("image"):#图片
+        if msg_list[1].split("]", 1)[0].split("subType=", 1)[1] == "1":
+            handled_msg = msg_list[0] + "[表情包]" + msg_list[1].split("]", 1)[1]
+            return handled_msg
+        handled_msg = msg_list[0] + "[图片]" + msg_list[1].split("]", 1)[1]
+        return handled_msg
+    if msg_list[1].startswith("face"):#表情
+        handled_msg = msg_list[0] + "[表情]" + msg_list[1].split("]", 1)[1]
+        return handled_msg
+    if msg_list[1].startswith("at,qq="):#@xxx
+        qq_id = msg_list[1].split("]", 1)[0].split("qq=", 1)[1]
+        if qq_id == "all":
+            handled_msg = msg_list[0] + "[@全体成员]" + msg_list[1].split("]", 1)[1]
+            return handled_msg
+        handled_msg = msg_list[0] + "[@" + qq_id + "]" + msg_list[1].split("]", 1)[1]
+        return handled_msg
+    if msg_list[1].startswith("reply"):#回复
+        qq_id = msg_list[1].split("]", 2)[1].split("qq=", 1)[1]
+        mid_text = "[回复 " + qq_id + " 之前发送的消息]"
+        handled_msg = msg_list[0] + mid_text + msg_list[1].split("]", 2)[2]
+        return handled_msg
+    if msg_list[1].startswith("forward"):#转发消息
+        #handled_msg = msg_list[0] + "[合并转发消息]" + msg_list[1].split("]", 1)[1]
+        return "[合并转发消息]"
+    if msg_list[1].startswith("video"):#视频
+        handled_msg = msg_list[0] + "[视频]" + msg_list[1].split("]", 1)[1]
+        return handled_msg
+    if msg_list[1].startswith("record"):#语音
+        #handled_msg = msg_list[0] + "[语音]" + msg_list[1].split("]", 1)[1]
+        return "[语音]"
+    if msg_list[1].startswith("music"):#音乐
+        handled_msg = msg_list[0] + "[分享音乐]" + msg_list[1].split("]", 1)[1]
+        return "[分享音乐]"
+    if msg_list[1].startswith("redbag"):#红包
+        handled_msg = msg_list[0] + "[有人群里发红包啦！快去抢！]" + msg_list[1].split("]", 1)[1]
+        return "[有人群里发红包啦！快去抢！]"
+    handled_msg = msg_list[0] + "[其他的消息类型]" + msg_list[1].split("]", 1)[1]#其他
+    return handled_msg
+
+
 def on_message(server: "CBRInterface", info: "MessageInfo"):
     if info.client_type == "cqhttp":
         if info.source_client in less_msg_group_client and less_msg_group_client != []:
             info.cancel_send_message()
             msg = info.content
+            sender = info.sender.split("_qq_user_id_", 1)[1]
             if msg.lower().startswith("##mc") or msg.lower().startswith("mc "):
                 msg = replace_message(msg)
+                while "[CQ:" in msg:
+                    msg = msg_handle(msg)
                 servers = server.get_online_mc_clients()
-                server.logger.info(f"[{info.source_client}] <{info.sender}> {msg}")
+                server.logger.info(f"[{info.source_client}] <{sender}> {msg}")
                 for i in servers:
-                    server.send_custom_message(info.source_client, i, msg, info.sender)
+                    server.send_custom_message(info.source_client, i, msg, sender)
         elif info.source_client not in full_msg_group_client:
             info.cancel_send_message()
     else:
