@@ -76,13 +76,16 @@ def help_formatter(mcdr_prefix, command, first_msg, click_msg, use_command=None)
 
 
 def message_formatter(client_name, player, msg):
-    message = ""
-    if client_name != "CBR":
-        message += f"§7[§{client_color}{client_name}§7] "
     if player != "":
-        message += f"<{player}> {msg}"  # chat message
+        if client_name != "" and client != "CBR":
+            message = f"§7[§{client_color}{client_name}§7] <{player}§7> {msg}"
+        else:
+            message = f"§7<{player}§7> {msg}"
     else:
-        message += f"{msg}"
+        if client_name != "" and client != "CBR":
+            message = f"§7[§{client_color}{client_name}§7] {msg}"
+        else:
+            message = f"§7{msg}"
     return message
 
 
